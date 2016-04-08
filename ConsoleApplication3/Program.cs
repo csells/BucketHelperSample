@@ -45,7 +45,7 @@ namespace ConsoleApplication3 {
       Console.WriteLine($"Buckets, Files and Folders in {projectId}:");
       var buckets = client.ListBuckets(projectId);
       foreach (var bucket in buckets) {
-        EnumFolder(new BucketFolder(client, bucket), "  ");
+        EnumFolder(new BucketFolder(client, bucket.Name), "  ");
       }
     }
 
