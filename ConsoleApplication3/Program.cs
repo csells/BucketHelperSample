@@ -18,11 +18,9 @@ namespace ConsoleApplication3 {
       var client = StorageClient.FromApplicationCredentials("Demo").Result;
 
       // create a new file
-      //var bucket = client.ListBuckets(projectId, new ListBucketsOptions { Prefix = projectId }).Single(b => b.Name == projectId);
-      //var folder = new BucketFolder(client, bucket, client.GetObject(bucket.Name, "foo/foo-level-2/"));
       // NOTE: would be handy to have a UploadObject method that took a filename instead of a stream
       using (var stream = new FileStream(@"C:\Users\Chris\Downloads\gutter2.jpg", FileMode.Open)) {
-        client.UploadObject(projectId, "foo/bar/quux.jpg", "image/jpeg", stream);
+        client.UploadObject(projectId, "foo/bar/quux2.jpg", "image/jpeg", stream);
       }
     }
 

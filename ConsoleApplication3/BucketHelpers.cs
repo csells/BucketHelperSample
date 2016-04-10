@@ -14,45 +14,48 @@ public class BucketFile {
   }
 
   public string ShortName { get { return obj.Name.Split('/').Last(); } }
-  public Google.Apis.Storage.v1.Data.Object Object {  get { return obj; } }
+  public Google.Apis.Storage.v1.Data.Object Object { get { return obj; } }
 }
 
 public class BucketFolder {
   StorageClient client;
   string bucket;
-  Google.Apis.Storage.v1.Data.Object obj;
+  string name;
 
-  public BucketFolder(StorageClient client, string bucket, Google.Apis.Storage.v1.Data.Object obj = null) {
+  public BucketFolder(StorageClient client, string bucket, string name = "") {
     if (client == null) { throw new ArgumentNullException("client"); }
     if (bucket == null) { throw new ArgumentNullException("bucket"); }
-    if (obj != null && obj.Bucket != bucket) { throw new ArgumentException("obj must be from bucket"); }
-    if (obj != null && !obj.Name.EndsWith("/")) { throw new ArgumentException("folder names must end in /"); }
+    if (!string.IsNullOrEmpty(name) && !name.EndsWith("/")) { throw new ArgumentException("folder names must end in /"); }
     this.client = client;
     this.bucket = bucket;
-    this.obj = obj;
+    this.name = name;
   }
 
   public string ShortName {
     get {
-      return obj == null ? bucket : obj.Name.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries).Last();
+      return string.IsNullOrEmpty(name) ? bucket : name.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries).Last();
     }
   }
 
-  public Google.Apis.Storage.v1.Data.Object Object { get { return obj; } }
-
+  // TODO: test with multiple objects in the same folder, both explicitly and implicitly
   public IEnumerable<BucketFolder> Folders {
     get {
+      var prefix = name ?? "";
       return client
-        .ListObjects(bucket, obj?.Name)
-        .Where(o => o.Name.EndsWith("/") && o.Name.Substring(obj?.Name.Length ?? 0).Sum(c => c == '/' ? 1 : 0) == 1)
-        .Select(o => new BucketFolder(client, bucket, o));
+        .ListObjects(bucket, prefix)
+        .Select(o => o.Name.Substring(prefix.Length))
+        .Where(n => n.Contains('/'))
+        .Select(n => n.Split('/').First())
+        .Distinct()
+        .Select(n => new BucketFolder(client, bucket, prefix + n + "/"));
     }
   }
 
   public IEnumerable<BucketFile> Files {
     get {
+      var prefix = name ?? "";
       return client
-        .ListObjects(bucket, obj?.Name, new ListObjectsOptions { Delimiter = "/" })
+        .ListObjects(bucket, prefix, new ListObjectsOptions { Delimiter = "/" })
         .Where(o => !o.Name.EndsWith("/"))
         .Select(o => new BucketFile(o));
     }
