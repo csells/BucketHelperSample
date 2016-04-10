@@ -1,62 +1,58 @@
-﻿using Google.Apis.Storage.v1.Data;
+﻿using Google;
+using Google.Apis.Storage.v1.Data;
 using Google.Storage.V1;
 using System;
-using System.IO;
-using System.Linq;
+using Google.Apis.Requests;
+using System.Net;
 
-namespace ConsoleApplication3 {
+namespace BucketHelperSample {
   class Program {
     static void Main(string[] args) {
+      // enumerate buckets from https://console.cloud.google.com/storage/browser?project=YOUR-PROJECT-ID
       var projectId = "firm-site-126023";
-      //TestBucketHelpers(projectId);
-      EnumBucketsFlat(projectId);
+      DumpBuckets(projectId);
       Console.WriteLine();
-      EnumBucketsTree(projectId);
+      DumpBucketsTree(projectId);
     }
 
-    static void TestBucketHelpers(string projectId) {
-      var client = StorageClient.FromApplicationCredentials("Demo").Result;
-
-      // create a new file
-      // NOTE: would be handy to have a UploadObject method that took a filename instead of a stream
-      using (var stream = new FileStream(@"C:\Users\Chris\Downloads\gutter2.jpg", FileMode.Open)) {
-        client.UploadObject(projectId, "foo/bar/quux2.jpg", "image/jpeg", stream);
-      }
-    }
-
-    static void EnumBucketsFlat(string projectId) {
+    static void DumpBuckets(string projectId) {
       var client = StorageClient.FromApplicationCredentials("Demo").Result;
 
       Console.WriteLine($"Buckets and Objects in {projectId}:");
-      var buckets = client.ListBuckets(projectId);
-      foreach (var bucket in buckets) {
-        Console.WriteLine($"  {bucket.Name}/");
-        var objs = client.ListObjects(bucket.Name, null);
-        foreach (var obj in objs) {
+      foreach (var bucket in client.ListBuckets(projectId)) {
+        Console.WriteLine($"  {bucket.Name}/ [<bucket>]");
+        foreach (var obj in client.ListObjects(bucket.Name, null)) {
           Console.WriteLine($"    {obj.Name} [{obj.ContentType}]");
         }
       }
     }
 
-    static void EnumBucketsTree(string projectId) {
+    static void DumpBucketsTree(string projectId) {
       var client = StorageClient.FromApplicationCredentials("Demo").Result;
       Console.WriteLine($"Buckets, Files and Folders in {projectId}:");
-      var buckets = client.ListBuckets(projectId);
-      foreach (var bucket in buckets) {
-        EnumFolder(new BucketFolder(client, bucket.Name), "  ");
+      foreach (var bucket in client.ListBuckets(projectId)) {
+        DumpFolder(client, bucket);
       }
     }
 
-    static void EnumFolder(BucketFolder parent, string indent) {
-      Console.WriteLine($"{indent}{parent.ShortName}/");
-      indent += "  ";
-
-      foreach (var file in parent.Files) {
-        Console.WriteLine($"{indent}{file.ShortName} [{file.Object.ContentType}]");
+    static void DumpFolder(StorageClient client, Bucket bucket, string parentFolder = "", string indent = "  ") {
+      // Folders can be explicit objects or implicit based on the prefixes of files
+      string shortName = parentFolder == "" ? bucket.Name : BucketHelper.ShortName(parentFolder);
+      string folderType = parentFolder == "" ? "<bucket>" : "";
+      if (parentFolder != "") {
+        try { folderType = client.GetObject(bucket.Name, parentFolder).ContentType; }
+        catch (GoogleApiException ex) when (ex.HttpStatusCode == HttpStatusCode.NotFound) { folderType = "<implicit>"; }
       }
 
-      foreach (var child in parent.Folders) {
-        EnumFolder(child, indent);
+      Console.WriteLine($"{indent}{shortName}/ [{folderType}]");
+      indent += "  ";
+
+      foreach (var file in bucket.Files(client, parentFolder)) {
+        Console.WriteLine($"{indent}{file.ShortName()} [{file.ContentType}]");
+      }
+
+      foreach (var folder in bucket.Folders(client, parentFolder)) {
+        DumpFolder(client, bucket, folder, indent);
       }
 
     }

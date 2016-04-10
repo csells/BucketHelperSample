@@ -1,64 +1,47 @@
+using Google.Apis.Storage.v1.Data;
 using Google.Storage.V1;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class BucketFile {
-  // NOTE: the use of the type "Object" is terribly inconvenient in .NET
-  Google.Apis.Storage.v1.Data.Object obj;
-
-  public BucketFile(Google.Apis.Storage.v1.Data.Object obj) {
-    if (obj == null) { throw new ArgumentNullException("obj"); }
-    if (obj.Name.EndsWith("/")) { throw new ArgumentException("file names can't end in /"); }
-    this.obj = obj;
-  }
-
-  public string ShortName { get { return obj.Name.Split('/').Last(); } }
-  public Google.Apis.Storage.v1.Data.Object Object { get { return obj; } }
-}
-
-public class BucketFolder {
-  StorageClient client;
-  string bucket;
-  string name;
-
-  public BucketFolder(StorageClient client, string bucket, string name = "") {
+public static class BucketHelper {
+  public const char Delimiter = '/';
+  public static IEnumerable<string> Folders(this Bucket bucket, StorageClient client, string parentFolder = "") {
+    if (bucket == null) { throw new ArgumentNullException("this"); }
     if (client == null) { throw new ArgumentNullException("client"); }
-    if (bucket == null) { throw new ArgumentNullException("bucket"); }
-    if (!string.IsNullOrEmpty(name) && !name.EndsWith("/")) { throw new ArgumentException("folder names must end in /"); }
-    this.client = client;
-    this.bucket = bucket;
-    this.name = name;
+    if (!string.IsNullOrEmpty(parentFolder) && !parentFolder.EndsWith(Delimiter.ToString())) { throw new ArgumentException("parentFolder must end in " + Delimiter); }
+    if (!string.IsNullOrEmpty(parentFolder) && parentFolder == Delimiter.ToString()) { throw new ArgumentException("root folder is \"\", not " + Delimiter); }
+
+    var prefix = parentFolder ?? "";
+    return client
+      .ListObjects(bucket.Name, prefix)
+      .Select(o => o.Name.Substring(prefix.Length))
+      .Where(n => n.Contains(Delimiter))
+      .Select(n => n.Split(Delimiter).First())
+      .Distinct()
+      .Select(n => prefix + n + Delimiter);
   }
 
-  public string ShortName {
-    get {
-      return string.IsNullOrEmpty(name) ? bucket : name.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries).Last();
-    }
+  public static IEnumerable<Google.Apis.Storage.v1.Data.Object> Files(this Bucket bucket, StorageClient client, string parentFolder = "") {
+    if (bucket == null) { throw new ArgumentNullException("this"); }
+    if (client == null) { throw new ArgumentNullException("client"); }
+    if (!string.IsNullOrEmpty(parentFolder) && !parentFolder.EndsWith(Delimiter.ToString())) { throw new ArgumentException("parentFolder must end in " + Delimiter); }
+    if (!string.IsNullOrEmpty(parentFolder) && parentFolder == Delimiter.ToString()) { throw new ArgumentException("root folder is \"\", not " + Delimiter); }
+
+    var prefix = parentFolder ?? "";
+    return client
+      .ListObjects(bucket.Name, prefix, new ListObjectsOptions { Delimiter = Delimiter.ToString() })
+      .Where(o => !o.Name.EndsWith(Delimiter.ToString()));
   }
 
-  // TODO: test with multiple objects in the same folder, both explicitly and implicitly
-  public IEnumerable<BucketFolder> Folders {
-    get {
-      var prefix = name ?? "";
-      return client
-        .ListObjects(bucket, prefix)
-        .Select(o => o.Name.Substring(prefix.Length))
-        .Where(n => n.Contains('/'))
-        .Select(n => n.Split('/').First())
-        .Distinct()
-        .Select(n => new BucketFolder(client, bucket, prefix + n + "/"));
-    }
+  public static string ShortName(string name) {
+    if (name == null) { throw new ArgumentNullException("name"); }
+    return name.Split(new char[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries).Last();
   }
 
-  public IEnumerable<BucketFile> Files {
-    get {
-      var prefix = name ?? "";
-      return client
-        .ListObjects(bucket, prefix, new ListObjectsOptions { Delimiter = "/" })
-        .Where(o => !o.Name.EndsWith("/"))
-        .Select(o => new BucketFile(o));
-    }
+  public static string ShortName(this Google.Apis.Storage.v1.Data.Object obj) {
+    if (obj == null) { throw new ArgumentNullException("this"); }
+    return ShortName(obj.Name);
   }
 }
 
