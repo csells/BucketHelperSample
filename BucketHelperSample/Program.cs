@@ -2,14 +2,13 @@
 using Google.Apis.Storage.v1.Data;
 using Google.Storage.V1;
 using System;
-using Google.Apis.Requests;
 using System.Net;
 
 namespace BucketHelperSample {
   class Program {
     static void Main(string[] args) {
       // enumerate buckets from https://console.cloud.google.com/storage/browser?project=YOUR-PROJECT-ID
-      var projectId = "firm-site-126023";
+      var projectId = args[0];
       DumpBuckets(projectId);
       Console.WriteLine();
       DumpBucketsTree(projectId);
