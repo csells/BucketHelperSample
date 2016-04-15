@@ -7,6 +7,11 @@ using System.Net;
 namespace BucketHelperSample {
   class Program {
     static void Main(string[] args) {
+      if (args.Length != 1) {
+        Console.WriteLine("Usage: BucketHelperSample <project-id>");
+        return;
+      }
+
       // enumerate buckets from https://console.cloud.google.com/storage/browser?project=YOUR-PROJECT-ID
       var projectId = args[0];
       DumpBuckets(projectId);
@@ -15,7 +20,7 @@ namespace BucketHelperSample {
     }
 
     static void DumpBuckets(string projectId) {
-      var client = StorageClient.FromApplicationCredentials("Demo").Result;
+      var client = StorageClient.Create();
 
       Console.WriteLine($"Buckets and Objects in {projectId}:");
       foreach (var bucket in client.ListBuckets(projectId)) {
@@ -27,7 +32,7 @@ namespace BucketHelperSample {
     }
 
     static void DumpBucketsTree(string projectId) {
-      var client = StorageClient.FromApplicationCredentials("Demo").Result;
+      var client = StorageClient.Create();
       Console.WriteLine($"Buckets, Files and Folders in {projectId}:");
       foreach (var bucket in client.ListBuckets(projectId)) {
         DumpFolder(client, bucket);
