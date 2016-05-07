@@ -1,6 +1,8 @@
 ﻿using Google.Storage.V1;
 using Google.Storage.V1.Demo;
 using System;
+using System.IO;
+using System.Text;
 
 namespace BucketHelperSample {
   class Program {
@@ -12,7 +14,6 @@ namespace BucketHelperSample {
 
       var projectId = args[0];
       ListBucketsAndObjects(projectId);
-
       Console.WriteLine();
       ListBucketsFilesAndFolders(projectId);
     }
