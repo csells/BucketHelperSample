@@ -43,8 +43,7 @@ The explicit folder comes from an object with a name that ends in a slash. You c
 
 ```c#
 var client = StorageClient.Create();
-var bucket = "csells-bucket-1";
-client.UploadObject(bucket, "quux/", "", Stream.Null);
+client.UploadObject(bucketName, "quux/", "", Stream.Null);
 
 ```
 
@@ -90,7 +89,6 @@ The implicit and explicit folders are folded together into a list of strings at 
 
 ```c#
 var client = StorageClient.Create();
-var bucket = "csells-bucket-1";
-var folderObj = client.CreateFolder(bucket, "baaz/");
+var folderObj = client.CreateFolder(bucketName, "baaz/");
 
 ```
