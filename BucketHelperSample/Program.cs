@@ -1,8 +1,6 @@
 ﻿using Google.Storage.V1;
 using Google.Storage.V1.Demo;
 using System;
-using System.IO;
-using System.Text;
 
 namespace BucketHelperSample {
   class Program {

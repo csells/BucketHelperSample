@@ -1,14 +1,14 @@
 # BucketHelperSample
 Google Cloud Storage sample to enumerate files and folders explicitly
 
-# Buckets and Files and Folders, Oh My!
-Google's [Cloud Storage Browser](https://console.cloud.google.com/storage/browser) perpetrates a fiction of files and folders that doesn't exist. The GCS API only has two concepts: buckets and objects.
+## Buckets and Files and Folders, Oh My!
+Google's [Cloud Storage Browser](https://console.cloud.google.com/storage/browser) perpetrates a fiction of files and folders that doesn't exist. The [Google Cloud Storage (GCS) API](https://cloud.google.com/storage/docs/json_api/) only has two concepts: buckets and objects.
 
-A bucket needs a globally unique name and is a container of objects.
+1. A bucket is a container of objects and needs a globally unique name.
 
-An object has a name, a content type and content. The name can be simple, e.g. "foo.txt" or it can have slashes in it, e.g. "foo/bar.txt" or even just "quux/". However, from the GCS API POV, there's no difference -- the only container is a bucket.
+2. An object has a name, a content type and content. The name can be simple, e.g. "foo.txt" or it can have slashes in it, e.g. "foo/bar.txt" or even just "quux/". However, from the GCS API point of view, there's no difference -- the only container is a bucket.
 
-For example, I can write a program using [the GCS client lib](http://github.com/googlecloudplatform/gcloud-dotnet) from [NuGet](https://www.nuget.org/packages/Google.Storage.V1/) that looks like this:
+For example, I can write a program using [the .NET GCS client lib](https://github.com/GoogleCloudPlatform/google-cloud-dotnet#google-cloud-storage) from [NuGet](https://www.nuget.org/packages/Google.Storage.V1/) that looks like this:
 
 ```c#
 void ListBucketsAndObjects(string projectId) {
@@ -36,7 +36,7 @@ However, if you surf to the [Storage Browser](https://console.cloud.google.com/s
 
 <img src="http://sellsbrothers.com/public/post-images/gcs-bhelper-1.png" />
 
-# Implicit and Explicit Folders
+## Implicit and Explicit Folders
 The Storage Browser has interpreted one of the objects as a file and two of them as folders, one implicit and one explicit. The implicit object folder comes from the slash in "foo/bar.txt"; the slash is used as a delimiter that means "folder" as far as the Storage Browser is concerned.
 
 The explicit folder comes from an object with a name that ends in a slash. You can create one by pressing the Create Folder button in the Storage Explorer or with the following lines of code:
@@ -47,8 +47,8 @@ client.UploadObject(bucketName, "quux/", "", Stream.Null);
 
 ```
 
-# Working with Folders
-When you're working with buckets and objects, the ListBuckets and ListObjects methods work just fine. However, if you'd like to navigate the fictional hierarchy of files and folders the way that the Storage Browser does, you can use the BrowserHelper:
+## Working with Folders
+When you're working with buckets and objects, the ListBuckets and ListObjects methods work just fine. However, if you'd like to navigate the fictional hierarchy of files and folders the way that the Storage Browser does, you can use the [BrowserHelper](https://github.com/csells/BucketHelperSample/) (a piece of .NET helper code I put together for just this purpose):
 
 ```c#
 void ListBucketsFilesAndFolders(string projectId) {
@@ -72,8 +72,9 @@ void ListFilesAndFolders(StorageClient client, string bucket, string parentFolde
     ListFilesAndFolders(client, bucket, folder, indent);
   }
 }
-
 ```
+
+The BucketHelper extension class provides the ShortName, ListFiles and ListFolders functions in the sample above. ListFiles and ListFolders are provided on the existing .NET client library types instead of providing a whole new set of wrapped types, which largely just get in the way.
 
 The output for the same list of objects looks like this:
 
@@ -85,7 +86,9 @@ csells-bucket-1/
   quux/
 ```
 
-The implicit and explicit folders are folded together into a list of strings at each level, so your code doesn't have to care (although if you do care, a call to StorageClient.GetObject return an object or throw an error depending on whether it's explicit or implicit). When creating your objects, your code doesn't have to explicitly create folders, since implicit folders are first class citizens as far as the BrowserHelper and the Storage Explorer are concerned. However, if you'd like to create a folder explicitly, BrowserHelper provides a helper for that, too:
+The implicit and explicit folders are folded together into a list of strings at each level, so your code doesn't have to care which is which. However, if you do care, a call to StorageClient.GetObject returns an object or throws an exception depending on whether it's explicit or implicit.
+
+When creating your objects, your code doesn't have to explicitly create folders, since implicit folders are first class citizens as far as the BrowserHelper and the Storage Browser are concerned. However, if you'd like to create a folder explicitly, BrowserHelper provides a helper for that, too:
 
 ```c#
 var client = StorageClient.Create();
